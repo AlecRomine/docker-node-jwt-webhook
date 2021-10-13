@@ -1,0 +1,41 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:9.6
+    volumes:
+      - ./pg-docker/init/roles.sql:/docker-entrypoint-initdb.d/01-roles.sql
+      - ./pg-docker/init/db.sql:/docker-entrypoint-initdb.d/02-init.sql
+      - ./pg-docker/init/users.sql:/docker-entrypoint-initdb.d/03-users.sql
+      - ./pg-docker/init/address.sql:/docker-entrypoint-initdb.d/04-address.sql
+      - ./pg-docker/init/public_keys.sql:/docker-entrypoint-initdb.d/05-public_keys.sql
+      - ./pg-docker/pgdata:/var/lib/postgresql/data
+    expose:
+      - 5432
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+  
+  webhook:
+    build:
+      context: webhook
+    ports:
+      - 8080:8080
+    environment:
+      - DB_CONTAINER=postgres
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - HOSTNAME=${HOSTNAME}
+      - APP_PORT=${APP_PORT}
+    restart: always
+    depends_on:
+      - postgres
+
+
+## Moved this file to the parent directory from ./pg-docker and made the needed changes.
+## Changed pg-docker build context and removed the port mapping to leave
+## only an exposed port on the pg-docker container. That way it's still accessible
+## from the docker-compose virtual network, but not the external DNS.
+
